@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://ml-backend-0dqu.onrender.com', // Matches your backend port
+        target: 'http://localhost:5000', // Matches your backend port
         changeOrigin: true,
         secure: false,
       },

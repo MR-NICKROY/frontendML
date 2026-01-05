@@ -10,44 +10,37 @@ import {
   ResponsiveContainer,
   Cell
 } from "recharts";
-import "./Css/Dashboard.css"; // Reuse the high-tech styles
+import "./Css/Dashboard.css";
 
 const Transactions = () => {
-  // --- Form State ---
+  // --- Form State: EXACTLY 8 FIELDS ---
   const [formData, setFormData] = useState({
-    merchantId: "",
     TransactionAmount: "",
     Timestamp: "",
+    LastLogin: "",
     Category: "Food",
     AnomalyScore: "0.1",
     Transaction_Frequency: "1",
+    Total_Linked_Value: "",
     SuspiciousFlag: "0"
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  
-  // --- Modal State ---
-  const [showModal, setShowModal] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
 
-  // --- Options Generation ---
+  // Options
   const categories = ["Food", "Travel", "Procurement", "Entertainment", "Utilities", "Housing", "Transport", "Other"];
-  
-  // UPDATED: Predefined Anomaly Score Options
   const anomalyOptions = [
     { label: "Low (0.1)", value: 0.1 },
     { label: "Medium (0.5)", value: 0.5 },
     { label: "High (0.9)", value: 0.9 }
   ];
-
-  // UPDATED: Suspicious Flag Options
   const flagOptions = [
     { label: "Safe (0)", value: 0 },
     { label: "Suspicious (1)", value: 1 }
   ];
-
-  const freqOptions = Array.from({ length: 10 }, (_, i) => i + 1); // 1 to 10
+  const freqOptions = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -57,42 +50,23 @@ const Transactions = () => {
     e.preventDefault();
     setError("");
     setLoading(true);
+    setAnalysisResult(null); 
 
     try {
-      // Convert inputs to correct types for Backend
+      // Prepare Payload (All 8 Fields Required)
       const payload = {
-        merchantId: formData.merchantId,
         TransactionAmount: Number(formData.TransactionAmount),
+        Timestamp: formData.Timestamp,
+        LastLogin: formData.LastLogin,
         Category: formData.Category,
         AnomalyScore: Number(formData.AnomalyScore),
         Transaction_Frequency: Number(formData.Transaction_Frequency),
-        SuspiciousFlag: Number(formData.SuspiciousFlag),
-        Timestamp: formData.Timestamp // Send date string directly
+        Total_Linked_Value: Number(formData.Total_Linked_Value),
+        SuspiciousFlag: Number(formData.SuspiciousFlag)
       };
 
       const response = await transactionsAPI.addManual(payload);
-      
-      // Map API response (including backend-calculated fields) to Dashboard popup
-      const formattedResult = {
-        input: {
-          "Merchant ID": response.data.merchantId,
-          "Transaction Amount": response.data.TransactionAmount,
-          "Date & Time": response.data.Timestamp,
-          "Last Login (Auto)": response.data.LastLogin,
-          Category: response.data.Category,
-          "Anomaly Score": response.data.AnomalyScore,
-          Frequency: response.data.Transaction_Frequency,
-          "Total Linked Value (Auto)": response.data.Total_Linked_Value, // Backend Calculated
-          "Suspicious Flag": response.data.SuspiciousFlag
-        },
-        result: {
-          is_fraud: response.data.isFraud,
-          risk_score: response.data.riskScore
-        }
-      };
-
-      setAnalysisResult(formattedResult);
-      setShowModal(true);
+      setAnalysisResult(response.data);
       
     } catch (err) {
       console.error(err);
@@ -103,9 +77,9 @@ const Transactions = () => {
   };
 
   const formatValue = (key, value) => {
-    if (typeof value === 'boolean') return value ? "TRUE" : "FALSE";
-    if (key.includes("Date") || key.includes("Login") || key.includes("Timestamp")) {
-      return value ? new Date(value).toLocaleString() : "N/A";
+    if (!value && value !== 0) return "N/A";
+    if (key === "Timestamp" || key === "LastLogin" || key === "createdAt") {
+      return new Date(value).toLocaleString();
     }
     return value;
   };
@@ -115,13 +89,13 @@ const Transactions = () => {
     return [
       { 
         name: "Anomaly", 
-        value: analysisResult.input["Anomaly Score"], 
+        value: analysisResult.AnomalyScore, 
         color: "#f59e0b" 
       },
       { 
         name: "Risk Score", 
-        value: analysisResult.result.risk_score, 
-        color: analysisResult.result.risk_score > 0.5 ? "#ef4444" : "#10b981" 
+        value: analysisResult.riskScore, 
+        color: analysisResult.riskScore > 0.5 ? "#ef4444" : "#10b981" 
       }
     ];
   };
@@ -134,45 +108,25 @@ const Transactions = () => {
         
         <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
           
-          {/* Merchant ID */}
-          <div className="filter-group">
-            <label>Merchant ID</label>
-            <input 
-              type="text" 
-              name="merchantId" 
-              required 
-              value={formData.merchantId} 
-              onChange={handleChange}
-              placeholder="e.g. M-1024"
-            />
-          </div>
-
-          {/* Amount */}
+          {/* 1. Amount */}
           <div className="filter-group">
             <label>Transaction Amount ($)</label>
-            <input 
-              type="number" 
-              name="TransactionAmount" 
-              required 
-              value={formData.TransactionAmount} 
-              onChange={handleChange}
-              placeholder="Enter amount..."
-            />
+            <input type="number" name="TransactionAmount" required value={formData.TransactionAmount} onChange={handleChange} placeholder="Amount..."/>
           </div>
 
-          {/* Timestamp (Date & Time) */}
+          {/* 2. Timestamp */}
           <div className="filter-group">
-            <label>Timestamp (Date & Time)</label>
-            <input 
-              type="datetime-local" 
-              name="Timestamp" 
-              required 
-              value={formData.Timestamp} 
-              onChange={handleChange}
-            />
+            <label>Timestamp</label>
+            <input type="datetime-local" name="Timestamp" required value={formData.Timestamp} onChange={handleChange} />
           </div>
 
-          {/* Category */}
+          {/* 3. Last Login */}
+          <div className="filter-group">
+            <label>Last Login</label>
+            <input type="datetime-local" name="LastLogin" required value={formData.LastLogin} onChange={handleChange} />
+          </div>
+
+          {/* 4. Category */}
           <div className="filter-group">
             <label>Category</label>
             <select name="Category" value={formData.Category} onChange={handleChange}>
@@ -180,35 +134,33 @@ const Transactions = () => {
             </select>
           </div>
 
-          {/* Anomaly Score Dropdown */}
+          {/* 5. Anomaly Score */}
           <div className="filter-group">
             <label>Anomaly Score</label>
             <select name="AnomalyScore" value={formData.AnomalyScore} onChange={handleChange}>
-              {anomalyOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
+              {anomalyOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </div>
 
-          {/* Suspicious Flag Dropdown */}
+          {/* 6. Frequency */}
+          <div className="filter-group">
+            <label>Frequency</label>
+            <select name="Transaction_Frequency" value={formData.Transaction_Frequency} onChange={handleChange}>
+              {freqOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
+          </div>
+
+          {/* 7. Total Linked Value */}
+          <div className="filter-group">
+            <label>Total Linked Value</label>
+            <input type="number" name="Total_Linked_Value" required value={formData.Total_Linked_Value} onChange={handleChange} placeholder="Total Value..."/>
+          </div>
+
+          {/* 8. Suspicious Flag */}
           <div className="filter-group">
             <label>Suspicious Flag</label>
             <select name="SuspiciousFlag" value={formData.SuspiciousFlag} onChange={handleChange}>
-              {flagOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Frequency */}
-          <div className="filter-group">
-            <label>Transaction Frequency (1 - 10)</label>
-            <select name="Transaction_Frequency" value={formData.Transaction_Frequency} onChange={handleChange}>
-              {freqOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              {flagOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
             </select>
           </div>
 
@@ -218,91 +170,106 @@ const Transactions = () => {
             </button>
             {error && <p style={{ color: '#ef4444', marginTop: '10px' }}>{error}</p>}
           </div>
-
         </form>
       </div>
 
-      {/* --- Analysis Result Modal --- */}
-      {showModal && analysisResult && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="close-btn" onClick={() => setShowModal(false)}>&times;</button>
+      {/* --- INLINE RESULTS SECTION --- */}
+      {analysisResult && (
+        <div style={{ marginTop: '40px', animation: 'fadeIn 0.5s ease' }}>
+          
+          <h2 className="chart-title">ANALYSIS RESULT</h2>
+          
+          <div className="analysis-layout">
             
-            <h2>AI Security Analysis</h2>
-            
-            <div className="analysis-layout">
-              {/* LEFT COLUMN: Visual AI Result */}
-              <div className="ai-dashboard-layout">
-                
-                {/* Status Banner */}
-                <div className={`status-banner ${analysisResult.result.is_fraud ? 'status-danger' : 'status-safe'}`}>
-                  <h1 className="status-title">
-                    {analysisResult.result.is_fraud ? "FRAUD DETECTED" : "LEGITIMATE"}
-                  </h1>
-                  <div className="status-subtitle">
-                    AI CONFIDENCE: {((1 - Math.abs(0.5 - analysisResult.result.risk_score) * 2) * 100).toFixed(1)}%
+            {/* LEFT COLUMN: Data & AI Score */}
+            <div className="ai-dashboard-layout">
+              
+              {/* Status Banner */}
+              <div className={`status-banner ${analysisResult.isFraud ? 'status-danger' : 'status-safe'}`}>
+                <h1 className="status-title">
+                  {analysisResult.isFraud ? "FRAUD DETECTED" : "LEGITIMATE"}
+                </h1>
+                <div className="status-subtitle">
+                  AI CONFIDENCE: {((1 - Math.abs(0.5 - analysisResult.riskScore) * 2) * 100).toFixed(1)}%
+                </div>
+              </div>
+
+              {/* Risk Meter */}
+              <div className="risk-section">
+                <div className="meter-label">
+                  <span>RISK ASSESSMENT SCORE</span>
+                  <span>{(analysisResult.riskScore * 100).toFixed(2)} / 100</span>
+                </div>
+                <div className="progress-track">
+                  <div 
+                    className="progress-fill" 
+                    style={{ 
+                      width: `${analysisResult.riskScore * 100}%`,
+                      backgroundColor: analysisResult.riskScore > 0.5 ? '#ef4444' : '#10b981'
+                    }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* 8 FIELDS DISPLAY */}
+              <div>
+                <div className="data-grid-title">TRANSACTION DETAILS</div>
+                <div className="tech-grid">
+                  <div className="tech-item">
+                    <span className="tech-label">Transaction Amount</span>
+                    <span className="tech-value">${analysisResult.TransactionAmount}</span>
+                  </div>
+                  <div className="tech-item">
+                    <span className="tech-label">Timestamp</span>
+                    <span className="tech-value">{formatValue("Timestamp", analysisResult.Timestamp)}</span>
+                  </div>
+                  <div className="tech-item">
+                    <span className="tech-label">Last Login</span>
+                    <span className="tech-value">{formatValue("LastLogin", analysisResult.LastLogin)}</span>
+                  </div>
+                  <div className="tech-item">
+                    <span className="tech-label">Category</span>
+                    <span className="tech-value">{analysisResult.Category}</span>
+                  </div>
+                  <div className="tech-item">
+                    <span className="tech-label">Anomaly Score</span>
+                    <span className="tech-value">{analysisResult.AnomalyScore}</span>
+                  </div>
+                  <div className="tech-item">
+                    <span className="tech-label">Frequency</span>
+                    <span className="tech-value">{analysisResult.Transaction_Frequency}</span>
+                  </div>
+                  <div className="tech-item">
+                    <span className="tech-label">Total Linked Value</span>
+                    <span className="tech-value">${analysisResult.Total_Linked_Value}</span>
+                  </div>
+                  <div className="tech-item">
+                    <span className="tech-label">Suspicious Flag</span>
+                    <span className="tech-value">{analysisResult.SuspiciousFlag}</span>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                {/* Risk Score Meter */}
-                <div className="risk-section">
-                  <div className="meter-label">
-                    <span>RISK ASSESSMENT SCORE</span>
-                    <span>{(analysisResult.result.risk_score * 100).toFixed(2)} / 100</span>
-                  </div>
-                  <div className="progress-track">
-                    <div 
-                      className="progress-fill" 
-                      style={{ 
-                        width: `${analysisResult.result.risk_score * 100}%`,
-                        backgroundColor: analysisResult.result.risk_score > 0.5 ? '#ef4444' : '#10b981'
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                {/* Input Data Grid */}
-                <div>
-                  <div className="data-grid-title">ANALYZED PARAMETERS</div>
-                  <div className="tech-grid">
-                    {Object.entries(analysisResult.input).map(([key, value]) => (
-                      <div key={key} className="tech-item">
-                        <span className="tech-label">{key}</span>
-                        <span className="tech-value">{formatValue(key, value)}</span>
-                      </div>
+            {/* RIGHT COLUMN: Chart */}
+            <div className="chart-section">
+              <h3 style={{marginBottom: '20px', textAlign: 'center'}}>Risk vs Anomaly</h3>
+              <ResponsiveContainer width="100%" height="90%">
+                <BarChart data={getChartData()} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                  <XAxis dataKey="name" stroke="#9ca3af" tick={{fontSize: 12}} />
+                  <YAxis domain={[0, 1]} stroke="#9ca3af" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#111827', borderColor: '#374151', color: '#f3f4f6' }}
+                    cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                  />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={50}>
+                    {getChartData().map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* RIGHT COLUMN: Chart */}
-              <div className="chart-section">
-                <h3 style={{marginBottom: '20px', textAlign: 'center'}}>Comparative Metrics</h3>
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={getChartData()}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis dataKey="name" stroke="#9ca3af" tick={{fontSize: 12}} />
-                    <YAxis domain={[0, 1]} stroke="#9ca3af" />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: '#111827', 
-                        borderColor: '#374151', 
-                        color: '#f3f4f6',
-                        borderRadius: '6px'
-                      }}
-                      cursor={{fill: 'rgba(255,255,255,0.05)'}}
-                    />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={60}>
-                      {getChartData().map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
 
           </div>
