@@ -2,8 +2,6 @@ import http from "./http";
 
 export const transactionsAPI = {
   addManual: (data) =>
-    http.post("/api/transactions/manual", data),
+    http.post("/api/check-fraud", data)
 
-  myHistory: () =>
-    http.get("/api/transactions/my")
 };

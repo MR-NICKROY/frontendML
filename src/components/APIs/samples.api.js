@@ -5,5 +5,5 @@ export const samplesAPI = {
     http.get("/api/samples"),
 
   analyze: (data) =>
-    http.post("/api/samples/analyze", data)
+      http.post("/api/check-fraud", data)
 };

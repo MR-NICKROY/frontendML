@@ -1,23 +1,23 @@
-import React, { useState } from 'react'; // Removed unused 'useEffect'
-import Navbar from './components/Navbar.jsx';
-import Auth from './components/Auth.jsx';
+import React, { useState, useEffect } from 'react';
+import MainLayout from './components/MainLayout'; 
+import Preloader from './components/Preloader'; // Make sure you have this component created
 
 function App() {
-  // Initialize state based on whether 'user' exists in localStorage
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Function to handle successful login updates
-  const handleLoginSuccess = (userData) => {
-    setUser(userData);
-  };
+  useEffect(() => {
+    // Set a timer for 5 seconds (5000 milliseconds)
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 5000);
+
+    // Cleanup the timer if the component unmounts
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <div>
-      {/* If user exists, show Navbar, otherwise show Auth */}
-      {user ? <Navbar /> : <Auth onLoginSuccess={handleLoginSuccess} />}
+    <div className="App">
+      {isLoading ? <Preloader /> : <MainLayout />}
     </div>
   );
 }
