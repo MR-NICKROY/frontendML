@@ -18,7 +18,7 @@ const theme = {
 };
 
 const Transactions = () => {
-  // --- Form State (REMOVED SuspiciousFlag) ---
+  // --- Form State (ADDED SuspiciousFlag) ---
   const [formData, setFormData] = useState({
     TransactionAmount: "",
     Timestamp: "",
@@ -27,7 +27,7 @@ const Transactions = () => {
     AnomalyScore: "0.1",
     Transaction_Frequency: "1",
     Total_Linked_Value: "",
-    // SuspiciousFlag removed
+    SuspiciousFlag: "0", // Default 0 (Safe)
   });
 
   const [loading, setLoading] = useState(false);
@@ -38,7 +38,7 @@ const Transactions = () => {
   // Options
   const categories = ["Food", "Travel", "Procurement", "Entertainment", "Utilities", "Housing", "Transport", "Other"];
   const anomalyOptions = [ { label: "Low (0.1)", value: 0.1 }, { label: "Medium (0.5)", value: 0.5 }, { label: "High (0.9)", value: 0.9 } ];
-  // Flag options removed
+  // Flag options
   const freqOptions = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const handleChange = (e) => {
@@ -52,7 +52,7 @@ const Transactions = () => {
     setAnalysisResult(null);
 
     try {
-      // Payload (REMOVED SuspiciousFlag)
+      // Payload (INCLUDES SuspiciousFlag)
       const payload = {
         TransactionAmount: Number(formData.TransactionAmount),
         Timestamp: formData.Timestamp,
@@ -60,8 +60,8 @@ const Transactions = () => {
         Category: formData.Category,
         AnomalyScore: Number(formData.AnomalyScore),
         Transaction_Frequency: Number(formData.Transaction_Frequency),
-        Total_Linked_Value: Number(formData.Total_Linked_Value)
-        // SuspiciousFlag is NOT sent. The backend/ML will default it to 0.
+        Total_Linked_Value: Number(formData.Total_Linked_Value),
+        SuspiciousFlag: Number(formData.SuspiciousFlag) // Send as Number (0 or 1)
       };
 
       const response = await transactionsAPI.addManual(payload);
@@ -252,7 +252,14 @@ const Transactions = () => {
             <input type="number" name="Total_Linked_Value" className="cyber-input" required value={formData.Total_Linked_Value} onChange={handleChange} placeholder="0.00"/>
           </div>
           
-          {/* SUSPICIOUS FLAG INPUT REMOVED HERE */}
+          {/* SUSPICIOUS FLAG INPUT */}
+          <div className="input-group">
+            <label>Suspicious Flag</label>
+            <select name="SuspiciousFlag" className="cyber-input" value={formData.SuspiciousFlag} onChange={handleChange}>
+              <option value="0">0 - Safe</option>
+              <option value="1">1 - Suspicious</option>
+            </select>
+          </div>
 
           <button type="submit" className="analyze-btn" disabled={loading}>
             {loading ? "PROCESSING..." : "RUN AI PREDICTION"}
@@ -319,7 +326,7 @@ const Transactions = () => {
                     <div className="cyber-item"><span className="cyber-label">Amount</span><span className="cyber-value">₹{formData.TransactionAmount}</span></div>
                     <div className="cyber-item"><span className="cyber-label">Category</span><span className="cyber-value">{formData.Category}</span></div>
                     <div className="cyber-item"><span className="cyber-label">Time</span><span className="cyber-value">{new Date(formData.Timestamp).toLocaleTimeString()}</span></div>
-                    {/* SUSPICIOUS FLAG REMOVED FROM PAYLOAD DISPLAY */}
+                    <div className="cyber-item"><span className="cyber-label">Suspicious Flag</span><span className="cyber-value">{formData.SuspiciousFlag}</span></div>
                 </div>
 
                 {/* RESULTS SECTION */}
