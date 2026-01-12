@@ -290,7 +290,7 @@ const Dashboard = () => {
                         <div className="cyber-item"><span className="cyber-label">Amount</span><span className="cyber-value">₹{selectedSample?.TransactionAmount}</span></div>
                         <div className="cyber-item"><span className="cyber-label">Category</span><span className="cyber-value">{selectedSample?.Category}</span></div>
                         <div className="cyber-item"><span className="cyber-label">Time</span><span className="cyber-value">{new Date(selectedSample?.Timestamp).toLocaleTimeString()}</span></div>
-                        <div className="cyber-item"><span className="cyber-label">Flag</span><span className="cyber-value">{selectedSample?.SuspiciousFlag ? "1" : "0"}</span></div>
+                        <div className="cyber-item"><span className="cyber-label">Suspicious Flag</span><span className="cyber-value">{selectedSample?.SuspiciousFlag ? "1" : "0"}</span></div>
                     </div>
 
                     {/* SECTION 2: RESULTS */}
